@@ -1,0 +1,74 @@
+import requests
+
+BASE_URL = 'http://openlibrary.org/'
+KEYS = ['title_suggest', 'isbn', 'author_name', 'author_key','subject']
+dict3 = {}
+dict4={}
+for item in KEYS:
+    dict3[item] = ""
+dict2 = []
+dict5 = {}
+
+def get_details(name):
+    payload = {
+        "q": name
+    }
+    r = requests.get(BASE_URL + 'search.json', params=payload)
+    if (r.status_code == 200):
+        json = r.json()['docs'][0]
+        for k in KEYS:
+            if k in json:
+                dict4[k] = json[k]
+        dict5 = dict3.copy()
+        dict5.update(dict4)
+        return dict5
+    return {}
+
+def get_isbns(details):
+    details['isbn'] = details['isbn'][:3]
+    return details['isbn']
+
+def get_authorid(details):
+    details['author_key'] = details['author_key']
+    return details ['author_key']
+
+def send_sensible_image_link(item):
+    if 'thumbnail_url' in item:
+        return item['thumbnail_url'].replace('-S.jpg', '-L.jpg')
+    return ''
+
+def get_image_links(details):
+    payload = {
+        "bibkeys": ','.join(["ISBN:" + f for f in details['isbn']]),
+        "format": 'json'
+    }
+    r = requests.get(BASE_URL + 'api/books', params=payload)
+    if (r.status_code == 200):
+        json = r.json()
+        isbn_dict = { k.replace('ISBN:', ''): send_sensible_image_link(json[k]) for k, v in json.items() }
+        details['isbn'] = isbn_dict
+        details['query'] = query
+        return details
+    return {}
+    
+import pandas as pd
+import time as t
+df_2 = pd.read_excel(r'C:\Users\saloni.m\Desktop\Work\Personal\Website Project\Try 2.xlsx', sheet_name='Sheet1')
+print(df_2)
+y = pd.DataFrame([])
+dict2 = []
+import pandas as pd
+for row in range(2):
+    try:
+        query = "'"+ df_2.loc[row, "Trim"] + "'"
+        print("starting", query)
+        deets = get_details(query)
+        image_links = get_image_links(deets)
+        dict2.append((df_2.loc[row, "Query"], query, image_links))
+        x = pd.DataFrame([image_links])
+        y = y.append(x)
+        print("done and moving to next in 2.4s")
+        t.sleep(2.4)
+        print("done and moving to next now")
+    except:
+        continue
